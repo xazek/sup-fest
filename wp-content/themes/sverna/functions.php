@@ -161,15 +161,17 @@ function sverna_scripts() {
 
     wp_enqueue_style( 'custom-css', get_template_directory_uri().'/css/custom.css', array( 'sverna-noto-sans' ) );
 
+    wp_enqueue_script( 'jquery' );
+
     wp_enqueue_script( 'sverna-navigation', get_template_directory_uri() . '/js/navigation.js', array(), _S_VERSION, true );
 
-    wp_enqueue_script( 'flickity-js', get_template_directory_uri().'/js/flickity.js');
+    wp_enqueue_script( 'flickity-js', get_template_directory_uri().'/js/flickity.js', array( 'jquery' ), _S_VERSION, true );
 
-    wp_enqueue_script( 'lightbox-js', get_template_directory_uri().'/lightbox/js/lightbox.js');
+    wp_enqueue_script( 'lightbox-js', get_template_directory_uri().'/lightbox/js/lightbox.js', array( 'jquery' ), _S_VERSION, true );
 
-    wp_enqueue_script( 'fullpage-js', get_template_directory_uri().'/js/fullpage.js');
+    wp_enqueue_script( 'fullpage-js', get_template_directory_uri().'/js/fullpage.js', array( 'jquery' ), _S_VERSION, true );
 
-    wp_enqueue_script( 'main-js', get_template_directory_uri().'/js/main.js');
+    wp_enqueue_script( 'main-js', get_template_directory_uri().'/js/main.js', array( 'jquery' ), _S_VERSION, true );
 
 	if ( is_singular() && comments_open() && get_option( 'thread_comments' ) ) {
 		wp_enqueue_script( 'comment-reply' );
@@ -198,6 +200,70 @@ require get_template_directory() . '/inc/template-functions.php';
 require get_template_directory() . '/inc/post-types.php';
 
 /**
+ * SUP FEST landing page ACF fields.
+ */
+require get_template_directory() . '/inc/sup-fest-acf.php';
+
+/**
+ * Add event-oriented SEO metadata for the SUP FEST landing page.
+ */
+function sverna_supfest_head_metadata() {
+	if ( ! is_page_template( array( 'sup-fest.php', 'home.php' ) ) ) {
+		return;
+	}
+
+	$title       = function_exists( 'get_field' ) && get_field( 'supfest_title' ) ? get_field( 'supfest_title' ) : 'SUP FEST Poznań';
+	$description = function_exists( 'get_field' ) && get_field( 'supfest_lead' ) ? wp_strip_all_tags( get_field( 'supfest_lead' ) ) : 'SUP FEST Poznań nad Jeziorem Strzeszyńskim: wyścigi SUP, warsztaty, testy sprzętu i festiwalowa atmosfera dla początkujących oraz zaawansowanych.';
+	$image       = '';
+
+	if ( function_exists( 'get_field' ) ) {
+		$poster = get_field( 'supfest_hero_poster' );
+
+		if ( is_array( $poster ) && ! empty( $poster['url'] ) ) {
+			$image = $poster['url'];
+		}
+	}
+
+	$schema = array(
+		'@context'    => 'https://schema.org',
+		'@type'       => 'SportsEvent',
+		'name'        => $title,
+		'description' => $description,
+		'url'         => get_permalink(),
+		'startDate'   => '2025-07-12T12:00:00+02:00',
+		'endDate'     => '2025-07-13T18:00:00+02:00',
+		'eventStatus' => 'https://schema.org/EventScheduled',
+		'eventAttendanceMode' => 'https://schema.org/OfflineEventAttendanceMode',
+		'location'    => array(
+			'@type'   => 'Place',
+			'name'    => 'Rafamarina, Przystań Strzeszynek',
+			'address' => array(
+				'@type'           => 'PostalAddress',
+				'streetAddress'   => 'ul. Koszalińska 15',
+				'addressLocality' => 'Poznań',
+				'addressCountry'  => 'PL',
+			),
+		),
+	);
+
+	if ( $image ) {
+		$schema['image'] = $image;
+	}
+	?>
+	<meta name="description" content="<?php echo esc_attr( $description ); ?>">
+	<meta property="og:title" content="<?php echo esc_attr( $title ); ?>">
+	<meta property="og:description" content="<?php echo esc_attr( $description ); ?>">
+	<meta property="og:type" content="website">
+	<meta property="og:url" content="<?php echo esc_url( get_permalink() ); ?>">
+	<?php if ( $image ) : ?>
+		<meta property="og:image" content="<?php echo esc_url( $image ); ?>">
+	<?php endif; ?>
+	<script type="application/ld+json"><?php echo wp_json_encode( $schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ); ?></script>
+	<?php
+}
+add_action( 'wp_head', 'sverna_supfest_head_metadata', 5 );
+
+/**
  * Customizer additions.
  */
 require get_template_directory() . '/inc/customizer.php';
@@ -215,5 +281,3 @@ show_admin_bar(FALSE);
 });
 
 /*end of disable admin bar */
-
-
